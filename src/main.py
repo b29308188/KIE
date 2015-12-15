@@ -4,6 +4,7 @@ sys.path.append(".")
 import numpy as np
 from datasets import Cora
 from models import Crfpp, NaiveBayes
+from utils import retag
 
 crfpp_prefix = "../bin/"
 template_path = "../train.template"
@@ -14,7 +15,8 @@ kb_test_path = "../data/cora/kb_cora_test.dat"
 kb_pred_path = "../data/cora/kb_cora_pred.dat"
 
 crf_train_path = "../data/cora/crf_cora_train.dat"
-crf_extend_train_path = "../data/cora/crf_cora_extend_train.dat"
+crf_added_train_path = "../data/cora/crf_cora_added_train.dat"
+crf_mixed_train_path = "../data/cora/crf_cora_mixed_train.dat"
 crf_true_train_path = "../data/cora/crf_cora_true_train.dat"
 crf_test_path = "../data/cora/crf_cora_test.dat"
 crf_pred_path = "../data/cora/crf_cora_pred.dat"
@@ -52,8 +54,10 @@ if __name__ == "__main__":
     
     
     # CRF trains on (N + predicted K) and tests on R
-    os.system("cat %s %s > %s" % (crf_train_path, kb_pred_path, crf_extend_train_path))
-    model2.fit(crf_extend_train_path)
+    dataset.extract_crf_features(crf_added_train_path, article_range = K)
+    retag(crf_added_train_path, kb_pred_path, last_feature = False) 
+    os.system("cat %s %s > %s" % (crf_train_path, crf_added_train_path, crf_mixed_train_path))
+    model2.fit(crf_mixed_train_path)
     model2.predict(crf_test_path, crf_pred_path, last_feature = False)
     print "model2 after adding data",model2.score(crf_test_path, crf_pred_path)
 
