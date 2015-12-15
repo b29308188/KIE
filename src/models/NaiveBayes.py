@@ -48,7 +48,7 @@ class NaiveBayes(Model):
         (X, Y) = self._seqs_to_train(seqs)
         self.model.fit(X, Y)
     
-    def predict(self, test_path, pred_path):
+    def predict(self, test_path, pred_path, last_feature = False):
         """
         Test on the test_path (CRFPP format) and write the prediction in pred_path (CRFPP format).
         """
@@ -60,14 +60,21 @@ class NaiveBayes(Model):
                 X = []
                 for token in seq:
                     features = token.strip().split()
-                    X.append({i:xi for (i, xi) in enumerate(features[:-1]) } )           
+                    if last_feature is False:
+                        X.append({i:xi for (i, xi) in enumerate(features[:-1]) } )           
+                    else:
+                        X.append({i:xi for (i, xi) in enumerate(features[:]) } )           
                 X = self.feature_encoder.transform(X).toarray()
                 Y = self.model.predict(X)
             
                 #write the features and the prediction into the ifle
                 for (i, token) in enumerate(seq):
-                    for xi in token.strip().split()[:-1]:#features
-                        f.write(xi+ " ")
+                    if last_feature is False:
+                        for xi in token.strip().split()[:-1]:#features
+                            f.write(xi+ " ")
+                    else:
+                        for xi in token.strip().split()[:]:#features
+                            f.write(xi+ " ")
                     f.write(self.tag_encoder.inverse_transform(Y[i]) + "\n")#prediction
                 f.write("\n")#the end of a sequence
 

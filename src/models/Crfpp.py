@@ -15,9 +15,9 @@ class Crfpp(Model):
             params = {"a" : "CRF-L2", "f": 3, "c": 1} ):
         """
         This is the constructor.
-        crf_prefix : the folder that should contains binary files : crf_train and crf_test
+        crf_prefix : the folder that should contains two CRFPP binary files : crf_train and crf_test
         template_path : the path to the CRFPP template
-        mod_prefix : the folder to store CRFPP template
+        mod_prefix : the folder to store CRFPP models
         valid_data_prefix : the folder to store the validation data in the "cross_valid" method
         log_prefix : the folder to store the CRFPP log file
         params : the dictionary that contains the parameters
@@ -57,18 +57,30 @@ class Crfpp(Model):
         os.system("%s/crf_learn -p 24 -a %s -f %d -c %f %s %s %s >> %s "%(self.crf_prefix, a, f, c, self.template_path, train_path, model_path, log_path))
 
 
-    def predict(self, test_path, pred_path):
+    def predict(self, test_path, pred_path, last_feature = False):
         """
         Test on the test_path (CRFPP format) and write the prediction in pred_path (CRFPP format).
         """
         
-        #predict it
-        #print("%s/crf_test -o %s -m %s %s"%(self.crf_prefix, pred_path, self.model, test_path))
-        os.system("%s/crf_test -o %s -m %s %s"%(self.crf_prefix, pred_path, self.model, test_path))
+        if last_feature == False:
+            f_w = open(test_path+".tmp", "w")
+            with open(test_path, "r") as f:
+                for line in f:
+                    line = line.strip().split()[:-1]# we don't need the last segment (label)
+                    f_w.write("\t".join(line)+ "\n")
+            f_w.close()
+
+            #predict it
+            os.system("%s/crf_test -o %s -m %s %s"%(self.crf_prefix, pred_path, self.model, test_path+".tmp"))
+            os.remove(test_path+".tmp")
+        else:
+            #predict it
+            os.system("%s/crf_test -o %s -m %s %s"%(self.crf_prefix, pred_path, self.model, test_path))
+
 
     def cross_valid(self, data_path, n_fold = 5):
         """
-        Do the cross_validation on the input CRFPP file.
+        Do the cross validation on the input CRFPP file.
         In order to parallize the validation part, we use the joblib package and write an indepdent function "valid" for different threads
         """
         
