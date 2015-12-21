@@ -24,6 +24,37 @@ def retag(feature_file_path, tag_file_path, last_feature = False):
                 else:
                     features = l_f.strip().split()[:]
                 tag = l_t.strip().split()[-1]
-            f.write("\t".join(features) + "\t" + tag + "\n")      
+                f.write("\t".join(features) + "\t" + tag + "\n")
 
+def strip(file_name, kept_list = ["author", "title"], inplace = True):
+    """
+    Repalce the tags with None excpet those in the kept_list
+    """
+    lines = open(file_name, "r").readlines()
+    with open(file_name, "w") as f:
+        for line in lines:
+            if len(line) <= 5:#empty
+                f.write("\n")
+            else:
+                features = line.strip().split()[:-1]
+                tag = line.strip().split()[-1]
+                if tag not in kept_list:
+                    tag = "None"
+                f.write("\t".join(features) + "\t" + tag + "\n")
+
+
+def conditional_join(file_one, file_two, output_file):
+    """
+    Only keep the tokens with the same prediction in both file_one and file_two
+    """
+    lines_1 = open(file_one, "r").readlines()
+    lines_2 = open(file_two, "r").readlines()
+    assert len(lines_1) == len(lines_2)
+    with open(output_file, "w") as f:
+        for (l_1, l_2) in zip(lines_1, lines_2):
+            if len(l_1) <= 5:
+                f.write("\n")
+            elif l_1.strip().split()[-1] == l_2.strip().split()[-1]:
+                f.write(l_1)
+    
 
