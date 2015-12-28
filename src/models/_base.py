@@ -46,16 +46,69 @@ class Model(object):
 
     def eval_tag_accuracy(self, truth_targets, pred_targets):
         """
-        Calculate the tag accuracy of the predicted sequences.
+        Calculate the tag 'accuracy' of the predicted sequences.
         truth_targets : the list of true targetes
         pred_target : the list of predicted targets
         """
         total = 0.0
         hit = 0.0
+        tss=''
+        pss=''
         for (truth_target, pred_target) in zip(truth_targets, pred_targets):# for each sequence
             total += len(truth_target)
             hit += sum([1 for (t_t, p_t) in zip(truth_target, pred_target) if t_t == p_t] )
+            tss+=t_t+','
+            pss+=p_t+','
+        print tss
+        print pss
         return hit/total
+
+    def eval_tag_precision(self,truth_targets, pred_targets):
+        """
+        Calculate the tag 'precision' of the predicted sequences.
+        truth_targets : the list of true targetes
+        pred_target : the list of predicted targets
+        """
+        #merge all sequences
+        t_tags = []
+        p_tags = []
+        for truth_target in truth_targets:
+            for t_t in truth_target:
+                t_tags.append(t_t)
+        for pred_target in pred_targets:
+            for p_t in pred_target:
+                p_tags.append(p_t)
+        tags = list(set(t_tags+p_tags))
+        if 'None' in tags:
+            tags.remove('None')
+        print ''
+        print tags
+        
+        s='Precision/Recall:\n'
+        for tag in tags:
+            TP = 0.0
+            FP = 0.0
+            FN = 0.0
+            TN = 0.0
+            for (t,p) in zip(t_tags,p_tags):
+                if t==tag and p==tag:
+                    TP+=1
+                elif t==tag and p!=tag:
+                    FN+=1
+                elif t!=tag and p==tag:
+                    FP+=1
+                elif t!=tag and p!=tag:
+                    TN+=1
+            #s='Accuracy='+str((TP+TN)/(TP+FP+FN+TN))+'\n'
+            if TP!=0:
+                s=s+str(tag)+':'+str(round(TP/(TP+FP),4))+'/'+str(round(TP/(TP+FN),4))+'\n'
+            else:
+                s=s+str(tag)+':'+'0.00/0.00'+'\n'
+
+        return s
+        
+
+
 
     
     def score(self, truth_path, pred_path):
@@ -74,7 +127,8 @@ class Model(object):
         for pred_seq in pred_seqs:
             pred_targets.append([token.strip().split()[-1] for token in pred_seq])
         
-        return self.eval_tag_accuracy(truth_targets, pred_targets)
+        #return self.eval_tag_accuracy(truth_targets, pred_targets)
+        return self.eval_tag_precision(truth_targets, pred_targets)
 
     @abstractmethod
     def fit(self, train_path):
