@@ -1,2 +1,2 @@
 
-__all__ = ['Crfpp', 'NaiveBayes']
+__all__ = ['Crfpp', 'NaiveBayes', 'LogisticRegression']

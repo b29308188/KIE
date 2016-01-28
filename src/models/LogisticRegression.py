@@ -6,16 +6,17 @@ from scipy.sparse import csr_matrix
 from sklearn.preprocessing import LabelEncoder
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.cross_validation import cross_val_score
-from sklearn.naive_bayes import MultinomialNB
-
-class NaiveBayes(Model):
+from sklearn.linear_model import LogisticRegression as LR
+from sklearn.svm import SVC
+class LogisticRegression(Model):
     """
     This class inherits the Model class from the ModelBase module.
     It uses the Multinomial Naive Bayes from the sklearn.
     Features are encoded by the one-hot encoding.
     """
     def __init__(self):
-        self.model = MultinomialNB(alpha = 1)
+        #self.model = LR(C = 1) 
+        self.model = SVC(C = 10, kernel = "linear") 
         self.feature_encoder = DictVectorizer()
         self.tag_encoder = LabelEncoder()
         

@@ -84,7 +84,8 @@ class Grobid(Dataset):
                         #add label
                         x.append(tag)
                         kb_seq.append(x)
-                kb_seqs.append(kb_seq)
+                if len(kb_seq) > 0:
+                    kb_seqs.append(kb_seq)
 
         #write to the file
         self.write_crfpp_data(output_path, kb_seqs)

@@ -12,7 +12,7 @@ class Crfpp(Model):
             mod_prefix = "../mod/", 
             valid_data_prefix = "../valid_data/",
             log_prefix = "../log/",
-            params = {"a" : "CRF-L2", "f": 3, "c": 1} ):
+            params = {"a" : "CRF-L2", "f": 5, "c": 1} ):
         """
         This is the constructor.
         crf_prefix : the folder that should contains two CRFPP binary files : crf_train and crf_test

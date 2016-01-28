@@ -59,11 +59,11 @@ class Model(object):
             hit += sum([1 for (t_t, p_t) in zip(truth_target, pred_target) if t_t == p_t] )
             tss+=t_t+','
             pss+=p_t+','
-        print tss
-        print pss
+        #print tss
+        #print pss
         return hit/total
 
-    def eval_tag_precision(self,truth_targets, pred_targets):
+    def eval_tag_precisionrecall(self,truth_targets, pred_targets):
         """
         Calculate the tag 'precision' of the predicted sequences.
         truth_targets : the list of true targetes
@@ -81,9 +81,11 @@ class Model(object):
         tags = list(set(t_tags+p_tags))
         if 'None' in tags:
             tags.remove('None')
-        print ''
-        print tags
-        
+        #print ''
+        #print tags
+   
+        rp = []
+        rr = []
         s='Precision/Recall:\n'
         for tag in tags:
             TP = 0.0
@@ -101,16 +103,16 @@ class Model(object):
                     TN+=1
             #s='Accuracy='+str((TP+TN)/(TP+FP+FN+TN))+'\n'
             if TP!=0:
-                s=s+str(tag)+':'+str(round(TP/(TP+FP),4))+'/'+str(round(TP/(TP+FN),4))+'\n'
+                #s=s+str(tag)+':'+str(round(TP/(TP+FP),4))+'/'+str(round(TP/(TP+FN),4))+'\n'
+                rp.append(TP/(TP+FP))
+                rr.append(TP/(TP+FN))
             else:
-                s=s+str(tag)+':'+'0.00/0.00'+'\n'
+                #s=s+str(tag)+':'+'0.00/0.00'+'\n'
+                rp.append(0.0)
+                rr.append(0.0)
 
-        return s
+        return rp,rr
         
-
-
-
-    
     def score(self, truth_path, pred_path):
         """
         Calculate the scores.
@@ -128,7 +130,46 @@ class Model(object):
             pred_targets.append([token.strip().split()[-1] for token in pred_seq])
         
         #return self.eval_tag_accuracy(truth_targets, pred_targets)
-        return self.eval_tag_precision(truth_targets, pred_targets)
+        return self.eval_tag_precisionrecall(truth_targets, pred_targets)
+
+    def precision(self, truth_path, pred_path):
+        """
+        Calculate the scores.
+        Temporarily there is only accuracy metric 
+        truth_path and pred_path should be the files of CRFPP format
+        """
+        truth_targets = []
+        truth_seqs = self.read_seqs(truth_path)
+        for truth_seq in truth_seqs:
+            #token.strip().split()[-1]: the tag of this token (label)
+            truth_targets.append([token.strip().split()[-1] for token in truth_seq])
+        pred_targets = []
+        pred_seqs = self.read_seqs(pred_path)
+        for pred_seq in pred_seqs:
+            pred_targets.append([token.strip().split()[-1] for token in pred_seq])
+        
+        p,r = self.eval_tag_precisionrecall(truth_targets, pred_targets)
+        return p
+
+    def recall(self, truth_path, pred_path):
+        """
+        Calculate the scores.
+        Temporarily there is only accuracy metric 
+        truth_path and pred_path should be the files of CRFPP format
+        """
+        truth_targets = []
+        truth_seqs = self.read_seqs(truth_path)
+        for truth_seq in truth_seqs:
+            #token.strip().split()[-1]: the tag of this token (label)
+            truth_targets.append([token.strip().split()[-1] for token in truth_seq])
+        pred_targets = []
+        pred_seqs = self.read_seqs(pred_path)
+        for pred_seq in pred_seqs:
+            pred_targets.append([token.strip().split()[-1] for token in pred_seq])
+        
+        #return self.eval_tag_accuracy(truth_targets, pred_targets)
+        p,r = self.eval_tag_precisionrecall(truth_targets, pred_targets)
+        return r
 
     @abstractmethod
     def fit(self, train_path):
