@@ -2,13 +2,13 @@ import sys
 import glob
 import numpy as np
 from _base import Dataset
-
+import editdistance
 """
 This is the class that handles all of the operations related to the Microsoft Academic Graph.
 """
 
 #header separating words
-head_ends = ["Introduction", "introduction", "INTRODUCTION", "Abstract", "ABSTRACT", "abstract", "OUTLINE, ""outline", "Outline"]
+head_ends = ["Introduction", "introduction", "INTRODUCTION", "Abstract", "ABSTRACT", "abstract", "OUTLINE, ""outline", "Outline", "keywords", "Keywords", "KEYWORDS"]
 
 class MicrosoftAcademicGraph(Dataset):
     def __init__(self, prefix):
@@ -22,6 +22,7 @@ class MicrosoftAcademicGraph(Dataset):
         self.article_list = [file_path for file_path in glob.glob(prefix+"/*")]
         self.article_num = len(self.article_list)
         self.cnt = 0
+
     def _extract_token_features(self, token):
         """ 
         Extract features of a token
@@ -37,22 +38,53 @@ class MicrosoftAcademicGraph(Dataset):
             if len(token) >= i+1:
                 x.append(token[:i+1])
             else:#not enough length : the whole string
-                x.append(token[:len(x)-1])
+                x.append(token)
 
         for i in range(5):#suffix 1~5
             if len(token) >= i+1:
                 x.append(token[-(i+1):])
             else:#not enough length: the whole string
-                x.append(token[-(len(x)-1):])
+                x.append(token)
         return x
 
     def _map_tags(self, truths, tokens):
         """
         Map the tokens with its tags (author, title ...)
         """
+        #print truths
+        #print tokens
+        tokens = [t.lower() for t in tokens]
         tags = ["None" for i in range(len(tokens))]
         for tag in truths.keys():
-            tagged_tokens = truths[tag]
+            if tag == "title":
+                tagged_tokens = [t.lower() for t in truths[tag]]
+                title = ' '.join(tagged_tokens)
+                min_ed = np.inf
+                min_i = 0
+                for i in range(len(tokens)-len(tagged_tokens)):
+                    s = ' '.join(tokens[i:i+len(tagged_tokens)])
+                    ed = editdistance.eval(title, s)
+                    if min_ed > ed:
+                        min_i = i
+                        min_ed = ed
+                for i in range(len(tagged_tokens)):
+                    tags[min_i+i] = tag
+
+            elif tag == "author":
+                for author in truths[tag]:
+                    n = len(author.split())
+                    min_ed = np.inf
+                    min_i = 0
+                    for i in range(len(tokens)-n):
+                        s = ' '.join(tokens[i:i+n])
+                        ed = editdistance.eval(author, s)
+                        if min_ed > ed:
+                            min_i = i
+                            min_ed = ed
+                    for i in range(n):
+                        tags[min_i+i] = tag
+              
+            """
             #mapping 
             for (i, token) in enumerate(tokens):
                 if tags[i] == "None" and token in tagged_tokens:
@@ -75,6 +107,8 @@ class MicrosoftAcademicGraph(Dataset):
                 if i != kept:
                     for i in range(c[0], c[1]+1):
                         tags[i] = "None"
+            """
+        #print tags
         return tags
         
     def extract_training_knowledge_base_features(self, output_path, article_range = (0, None)):
@@ -233,12 +267,16 @@ class MicrosoftAcademicGraph(Dataset):
                 
                 #process author 
                 s = f.readline()
-                truths['author'] = s[(s.find(">")+1):s.rfind("<")].replace(";", " ").split()#find authors and split them into tokens
-                
+                #truths['author'] = s[(s.find(">")+1):s.rfind("<")].replace(";", " ").split()#find authors and split them into tokens
+                truths['author'] = s[(s.find(">")+1):s.rfind("<")].split(";")#find authors and split them into tokens
+                #for i, author in enumerate(truths['author']):
+                    #truths['author'][i] = truths['author'][i].split()
+
                 #find body
                 while "<body>" not in s:
                     s = f.readline()
                 f.readline()
+
                 tokens = []
                 #process content
                 flag = 0
@@ -248,23 +286,29 @@ class MicrosoftAcademicGraph(Dataset):
                     if any(e in token for e in head_ends):#if there's any header separating words
                         flag = 1
                         break
-                    x = self._extract_token_features(token)#extract token features
-                    #map label to the token
-                    tokens.append(token)
+                    if "class=\"p\"" in s:
+                        x = self._extract_token_features(token)#extract token features
+                        crf_seq.append(x)
+                        #map label to the token
+                    
+                        tokens.append(token)
                     
                     """If you would like use PDF features, pelase remove # """
                     #F = self._info_feature(s)
                     #x += F
                     #print F, file_path
 
-                    crf_seq.append(x)
+                
+                """
+                to be refined
+                """
                 if flag == 0:# If find no header separating words
                     continue
 
-                try:#try mapping
+                try:
                     tags = self._map_tags(truths, tokens)
                 except:
-                    continue
+                    print "pass"
                 for i, token in enumerate(crf_seq):
                     token.append(tags[i])
                 crf_seqs.append(crf_seq)
